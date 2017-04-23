@@ -161,32 +161,45 @@ The best choice for parameters is gamma = 1 cost = 2
 table(true=dat[-train,"y"], pred = predict(tune.out$best.model, newdata=dat[-train,]))
 ```
 
+
 ## ROC curves
+We need to write a function that will plot the ROC curve.
+```{r}
+library(ROCR)
+rocplot <- function(pred, truth, ...){
+  predob <- prediction(pred, truth)
+  perf <- performance(predob, "tpr","fpr")
+  plot(perf, ...)
+}
+```
+
 ```{r}
 
 ```
 
+Now we plot the ROC
+```{r}
+svmfit.opt <- svm(y~., data = dat[train,], kernet = "radial", gamma = 2, cost = 1, deciision.values = T)
+fitted <- attributes(predict(svmfit.opt, dat[train,],decision.values = TRUE))$decision.values
+
+par(mfrow=c(1,2))
+rocplot(fitted, dat[train,"y"], main = "Training Data")
+#By increating gamma we can create a more flexible ROC curve
+svmfit.flex <- svm(y~., data = dat[train,], kernel = "radial", gamma = 50, cost = 1, decision.values = T)
+fitted <- attributes(predict(svmfit.flex, dat[train,], decision.values = TRUE))$decision.values
+rocplot(fitted, dat[train,"y"], add = T, col = "red")
+```
 
 
+Now we will make the ROC curve for the test data
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+fitted <- attributes(predict(svmfit.opt, dat[-train,],decision.values = T))$decision.values
+rocplot(fitted, dat[-train,"y"], main = "Test Data")
+fitted <- attributes(predict(svmfit.flex, dat[-train,], decision.values = T))$decision.values
+rocplot(fitted, dat[-train,"y"], add= T, col = "red")
+```
+The model with gamma = 2 appears to provide better test data results
 
 
 
