@@ -1,0 +1,204 @@
+---
+title: "Lab Support Vector Classifier"
+output: html_notebook
+---
+
+```{r}
+set.seed(1)
+x <- matrix(rnorm(20*2), ncol=2)
+y <- c(rep(-1,10),rep(1,10))
+x[y==1,]=x[y==1,]+1
+
+plot(x, col=(3-y))
+```
+
+```{r}
+dat <- data.frame(x=x, y=as.factor(y))
+library(e1071)
+svmfit <- svm(y~.,data=dat, kernel = "linear", cost = 10, scale = FALSE)
+```
+
+```{r}
+plot(svmfit,dat)
+```
+
+```{r}
+svmfit$index
+summary(svmfit)
+
+# the cost here is 10
+```
+```{r}
+# what if we used a smaller value for cost
+svmfit <- svm(y~.,data=dat, kernel = "linear", cost = .01, scale = FALSE)
+plot(svmfit,dat)
+svmfit$index
+
+# now we get many more support vectors
+# the reason for this is that the cost parameter is very small and the margins are very wide
+```
+
+```{r}
+# we will use cross-validation to figure out the best cost parameter
+
+set.seed(1)
+tune.out <- tune(svm,y~., data = dat, kernel = "linear"
+                 ,range = list(cost=c(0.001,0.01,0.1,1,5,10,100)))
+summary(tune.out)
+
+# we can see that 0.1 is the best cost parameter
+
+```
+```{r}
+# the tune() function actually stores the best model obtained
+bestmod <- tune.out$best.model
+summary(bestmod)
+```
+
+
+```{r}
+# lets test the model
+
+# generate the test data set
+set.seed(1)
+xtest <- matrix(rnorm(20*2),ncol=2)
+ytest <- sample(c(-1,1),20, rep=TRUE)
+xtest[ytest==1,] <- xtest[ytest==1,] +1
+testdat <- data.frame(x=xtest,y=as.factor(ytest))
+
+# now we use the best model from the cross validation to run the predictions
+
+ypred <- predict(bestmod,testdat)
+table(predict=ypred, truth=testdat$y)
+```
+
+```{r}
+# what if we had used cost = 0.01 instead
+svmfit <- svm(y~.,data=dat, kernel = "linear", cost = .01, scale = FALSE)
+yred <- predict(svmfit,testdat)
+table(ypred, testdat$y)
+
+```
+
+
+```{r}
+# now lets consider a situation where the two classes are linearly separable
+
+x[y==1,] <- x[y==1,] +0.5
+plot(x, col=(y+5)/2, pch = 19)
+```
+
+
+```{r}
+# we will now plot the hyperplane using a very large cost so that no observations are misclassified
+
+dat <- data.frame(x=x, y=as.factor((y)))
+svmfit <- svm(y~., data = dat, kernel = "linear", cost = 1e5)
+summary(svmfit)
+plot(svmfit,dat)
+```
+
+```{r}
+# Now we will try a much smaller value for the cost
+
+dat <- data.frame(x=x, y=as.factor((y)))
+svmfit <- svm(y~., data = dat, kernel = "linear", cost = 1)
+summary(svmfit)
+plot(svmfit,dat)
+```
+We missclassified a training example, but the margins are much wider. This means that the model will generalise better to new datasets.
+
+
+
+
+# Lab Support Vector Machine
+
+
+
+## fit the data using Radial kernel
+```{r}
+# generate the random dataset
+
+set.seed(1)
+x <- matrix(rnorm(200*2),ncol=2)
+x[1:100,] <- x[1:100,]+2
+x[101:150,] <- x[101:150,]-2
+y <- c(rep(1,150), rep(2,50))
+dat <- data.frame(x=x, y= as.factor(y))
+plot(x,col=y)
+
+
+```
+
+```{r}
+train <- sample(200,100)
+svmfit <- svm(y~., data=dat[train,],kernel="radial", gamma = 1, cost = 1)
+plot(svmfit,dat[train,])
+```
+
+```{r}
+summary(svmfit)
+```
+```{r}
+# the resulting figure has some misclassifications.
+# we can eliminate some of these by increasing the cost, but this will mean that the decision boundary will be more irregular
+train <- sample(200,100)
+svmfit <- svm(y~., data=dat[train,],kernel="radial", gamma = 1, cost = 1e5)
+plot(svmfit,dat[train,])
+```
+
+We can perform cross-validation using tune() to select the best option for tune() and cost
+```{r}
+set.seed(1)
+tune.out <- tune(svm, y~., data=dat[train,], kernel = "radial", ranges = list(cost=c(0.1,1,10,100,1000),
+                                                                              gamma=c(0.5,1,2,3,4)))
+summary(tune.out)
+```
+
+
+The best choice for parameters is gamma = 1 cost = 2
+```{r}
+table(true=dat[-train,"y"], pred = predict(tune.out$best.model, newdata=dat[-train,]))
+```
+
+## ROC curves
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
